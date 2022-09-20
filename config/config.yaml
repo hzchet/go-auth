@@ -1,0 +1,4 @@
+port: 8080
+users:
+    login1: password1
+    login2: password2
