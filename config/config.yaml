@@ -1,4 +1,7 @@
 port: 8080
+endpoints:
+    login: "/auth/api/v1/login"
+    verify: "/auth/api/v1/verify"
 users:
     login1: password1
     login2: password2

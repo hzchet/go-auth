@@ -1,20 +1,21 @@
 package main
 
 import (
-	"os"
-	"log"
-	"errors"
-	"net/http"
-	"time"
 	"context"
+	"errors"
+	"log"
+	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
-	
+	"time"
+
+	"server/internal/server"
 )
 
 func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	server := httpServer{}
+	server := server.HttpServer{}
 	go func() {
 		if err := server.Start(); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("start server failed: %#v", err)
@@ -22,7 +23,7 @@ func main() {
 	}()
 
 	<-ctx.Done()
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1 * time.Minute)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	err := server.Stop(shutdownCtx)
