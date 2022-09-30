@@ -11,7 +11,7 @@ import (
 )
 
 type Controller struct {
-	Config *utils.ConfigScheme
+	Config utils.ConfigScheme
 }
 
 func New(configPath string) *Controller {
@@ -21,7 +21,7 @@ func New(configPath string) *Controller {
 	}
 
 	controller := Controller{}
-	if err := viper.Unmarshal(controller.Config); err != nil {
+	if err := viper.Unmarshal(&controller.Config); err != nil {
 		log.Fatalf("unable to decode config file into struct: %v", err)
 	}
 
@@ -46,15 +46,13 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) Verify(w http.ResponseWriter, r *http.Request) {
 	accessToken, issuer, err := tokens.ExtractFromCookies(r, "access_token")
 
-	switch {
-	case accessToken.Valid:
+	if err == nil && accessToken.Valid {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(issuer.(string)))
+	} else {
+		refreshToken, issuer, err := tokens.ExtractFromCookies(r, "refresh_token")
 
-	case tokens.IsExpired(err):
-		refreshToken, issuer, _ := tokens.ExtractFromCookies(r, "refresh_token")
-
-		if refreshToken.Valid {
+		if err == nil && refreshToken.Valid {
 			username := issuer.(string)
 
 			accessToken, refreshToken := tokens.NewPair(username)

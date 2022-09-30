@@ -29,7 +29,10 @@ func AddToCookies(w http.ResponseWriter, token string, name string) {
 func ExtractFromCookies(r *http.Request, name string) (*jwt.Token, interface{}, error) {
 	tokenCookie, err := r.Cookie(name)
 	if err != nil {
-		log.Fatalf("error occurred while reading cookie: %v\n", err)
+		log.Printf("error occurred while reading cookie: %v\n", err)
+		if !errors.Is(err, http.ErrNoCookie) {
+			log.Fatal("closing\n")
+		}
 	}
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(
@@ -40,10 +43,6 @@ func ExtractFromCookies(r *http.Request, name string) (*jwt.Token, interface{}, 
 		},
 	)
 	return token, claims["Issuer"], err
-}
-
-func IsExpired(err error) bool {
-	return errors.Is(err, jwt.ErrTokenExpired)
 }
 
 func generate(duration time.Duration, issuer string) string {

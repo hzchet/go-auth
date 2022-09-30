@@ -25,7 +25,7 @@ func (s *HttpServer) Start() error {
 		Addr:    fmt.Sprintf(":%d", cntrl.Config.Port),
 		Handler: router,
 	}
-
+	fmt.Println("server started")
 	return s.server.ListenAndServe()
 }
 

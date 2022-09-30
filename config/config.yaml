@@ -3,5 +3,5 @@ endpoints:
     login: "/auth/api/v1/login"
     verify: "/auth/api/v1/verify"
 users:
-    login1: password1
-    login2: password2
+    login1: 9Hht8FGjoIkdq4Fvy48P+Bii+2xwX/gy8LL66hxvr+M=
+    login2: QfDHBPAvonRXeHQ0/VEPzLsDK0+9xbNmYwd/rsy6AJk=

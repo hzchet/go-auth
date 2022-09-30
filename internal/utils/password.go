@@ -12,9 +12,12 @@ var (
 	salt = []byte(os.Getenv("SALT"))
 )
 
-type password string
+type Password string
 
-func (p password) IsEqual(otherPassword string) bool {
-	hashed := pbkdf2.Key([]byte(otherPassword), salt, 4096, 32, sha1.New)
-	return p == password(base64.StdEncoding.EncodeToString(hashed))
+func saltedHash(s string) string {
+	return base64.StdEncoding.EncodeToString(pbkdf2.Key([]byte(s), salt, 4096, 32, sha1.New))
+}
+
+func (p Password) IsEqual(otherPassword string) bool {
+	return p == Password(saltedHash(otherPassword))
 }
