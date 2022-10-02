@@ -1,4 +1,4 @@
-port: 8080
+port: 3000
 endpoints:
     login: "/auth/api/v1/login"
     verify: "/auth/api/v1/verify"

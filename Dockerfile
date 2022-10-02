@@ -11,5 +11,5 @@ FROM alpine:3.15.4
 WORKDIR /app
 COPY --from=builder /app/application /app/application
 COPY config/config.yaml ./config/
-EXPOSE 8080
+EXPOSE 3000
 CMD ["/app/application"]
