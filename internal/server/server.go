@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 type HttpServer struct {
@@ -18,6 +19,7 @@ func (s *HttpServer) Start() error {
 	cntrl := controller.New("config/config.yaml")
 
 	router := chi.NewRouter()
+	router.Use(middleware.Logger)
 	router.Post(cntrl.Config.Endpoints["login"], cntrl.Login)
 	router.Post(cntrl.Config.Endpoints["verify"], cntrl.Verify)
 
