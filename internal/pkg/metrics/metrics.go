@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"os"
+
 	"github.com/TheZeroSlave/zapsentry"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -12,12 +14,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const (
-	DSN         = "https://94c0444acd3e4507a29b5e9b4c59403d@o1428566.ingest.sentry.io/6778904"
+var (
+	DSN         = os.Getenv("DSN")
 	TRACER_NAME = "team1_auth"
+	Tracer = otel.Tracer(TRACER_NAME)
 )
-
-var Tracer = otel.Tracer(TRACER_NAME)
 
 func InitOtel() error {
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(
