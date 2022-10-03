@@ -2,13 +2,23 @@ package server
 
 import (
 	"server/internal/pkg/controller"
+	"server/internal/pkg/metrics"
 
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/juju/zaputil/zapctx"
+	// "github.com/prometheus/client_golang/prometheus"
+	// "github.com/prometheus/client_golang/prometheus/promauto"
+	// "go.uber.org/zap/zapcore"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/riandyrn/otelchi"
+	"go.uber.org/zap"
+	"moul.io/chizap"
 )
 
 type HttpServer struct {
@@ -16,10 +26,28 @@ type HttpServer struct {
 }
 
 func (s *HttpServer) Start() error {
-	cntrl := controller.New("config/config.yaml")
+	logger, err := metrics.GetLogger(false, metrics.DSN, "myenv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	logger.Info("Start!")
+
+	if err := metrics.InitOtel(); err != nil {
+		logger.Fatal("OTEL init", zap.Error(err))
+	}
+
+	ctx := zapctx.WithLogger(context.Background(), logger)
 
 	router := chi.NewRouter()
-	router.Use(middleware.Logger)
+	router.Use(middleware.RequestID)
+	router.Use(otelchi.Middleware(metrics.TRACER_NAME, otelchi.WithChiRoutes(router)))
+	router.Use(chizap.New(logger, &chizap.Opts{
+		WithReferer:   true,
+		WithUserAgent: true,
+	}))
+
+	cntrl := controller.New("config/config.yaml", ctx)
 	router.Post(cntrl.Config.Endpoints["login"], cntrl.Login)
 	router.Post(cntrl.Config.Endpoints["verify"], cntrl.Verify)
 
@@ -27,7 +55,10 @@ func (s *HttpServer) Start() error {
 		Addr:    fmt.Sprintf(":%d", cntrl.Config.Port),
 		Handler: router,
 	}
-	fmt.Println("server started")
+
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(":9000", nil)
+	
 	return s.server.ListenAndServe()
 }
 

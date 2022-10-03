@@ -1,38 +1,49 @@
 package tokens
 
 import (
-	"errors"
-	"log"
 	"net/http"
+	"context"
 	"os"
 	"time"
 
+	"server/internal/pkg/metrics"
+
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/juju/zaputil/zapctx"
+	"go.uber.org/zap"
 )
 
 var (
 	privateKey = []byte(os.Getenv("JWT_PRIVATE_KEY"))
 )
 
-func NewPair(issuer string) (string, string) {
-	return generate(1, issuer), generate(60, issuer)
+func NewPair(ctx context.Context, issuer string) (string, string) {
+	newCtx, span := metrics.Tracer.Start(ctx, "AddToCookies")
+	defer span.End()
+	return generate(newCtx, 1, issuer), generate(newCtx, 60, issuer)
 }
 
-func AddToCookies(w http.ResponseWriter, token string, name string) {
+func AddToCookies(ctx context.Context, w http.ResponseWriter, token string, name string) {
+	_, span := metrics.Tracer.Start(ctx, "AddToCookies")
+	defer span.End()
+
 	cookie := &http.Cookie{
 		Name:  name,
 		Value: token,
 	}
+
 	http.SetCookie(w, cookie)
 }
 
 func ExtractFromCookies(r *http.Request, name string) (*jwt.Token, interface{}, error) {
+	logger := zapctx.Logger(r.Context())
+	_, span := metrics.Tracer.Start(r.Context(), "ExtractFromCookies")
+	defer span.End()
+
 	tokenCookie, err := r.Cookie(name)
+
 	if err != nil {
-		log.Printf("error occurred while reading cookie: %v\n", err)
-		if !errors.Is(err, http.ErrNoCookie) {
-			log.Fatal("closing\n")
-		}
+		logger.Debug("error occurred while reading cookie", zap.Error(err))
 	}
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(
@@ -45,12 +56,19 @@ func ExtractFromCookies(r *http.Request, name string) (*jwt.Token, interface{}, 
 	return token, claims["Issuer"], err
 }
 
-func generate(duration time.Duration, issuer string) string {
+func generate(ctx context.Context, duration time.Duration, issuer string) string {
+	logger := zapctx.Logger(ctx)
+	_, span := metrics.Tracer.Start(ctx, "generate")
+	defer span.End()
+	
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"ExpiresAt": jwt.NewNumericDate(time.Now().Add(duration * time.Minute)),
 		"IssuedAt":  jwt.NewNumericDate(time.Now()),
 		"Issuer":    issuer,
 	})
-	signedToken, _ := token.SignedString(privateKey)
+	signedToken, err := token.SignedString(privateKey)
+	if err != nil {
+		logger.Debug("error occurred while signing token", zap.Error(err))
+	}
 	return signedToken
 }
