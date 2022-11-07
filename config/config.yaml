@@ -1,7 +1,11 @@
-port: 3000
+port: 8080
 endpoints:
     login: "/auth/api/v1/login"
     verify: "/auth/api/v1/verify"
 users:
-    login1: el8UUR9W4NuNjS9U9yaIQDAEyMu5on9hzvz5Fi9NkeM=
-    login2: G8mgqmAtF1hKi/g7K3OE2BKfgwSXALXarD8kI6cL0y8=
+    email1: el8UUR9W4NuNjS9U9yaIQDAEyMu5on9hzvz5Fi9NkeM=
+    email2: G8mgqmAtF1hKi/g7K3OE2BKfgwSXALXarD8kI6cL0y8=
+    email3: Og5/Blwju+bq27MKCpf4vjVxyu4i1uJjiIgv0ytWKCQ=
+    email4: KeNvZmYynl/3nXEspTtm0CzJUyujEbxN3ZAzl4giHUg=
+    email5: QeYs8zlTOYYzQJormJWYxbAachwvozOcSG4s+ONcmWw=
+    email6: saY5GGv78MLdAJyiYEsQnj7lxD7jNvNOfHHXHw4l8T4=

@@ -2,11 +2,12 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
+	"server/internal/pkg/metrics"
 	"server/internal/pkg/tokens"
 	"server/internal/utils"
-	"server/internal/pkg/metrics"
 
 	"github.com/juju/zaputil/zapctx"
 	"github.com/spf13/viper"
@@ -23,7 +24,8 @@ func New(configPath string, ctx context.Context) *Controller {
 	_, span := metrics.Tracer.Start(ctx, "New")
 	defer span.End()
 
-	viper.SetConfigFile(configPath)
+	viper.AddConfigPath(configPath)
+	viper.SetConfigName("config")
 	if err := viper.ReadInConfig(); err != nil {
 		logger.Error("can't read config", zap.Error(err))
 	}
@@ -57,6 +59,14 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type UserProjection struct {
+	Email string
+}
+
+type ErrorProjection struct {
+	Error string
+}
+
 func (c *Controller) Verify(w http.ResponseWriter, r *http.Request) {
 	logger := zapctx.Logger(r.Context())
 	
@@ -66,8 +76,10 @@ func (c *Controller) Verify(w http.ResponseWriter, r *http.Request) {
 	accessToken, issuer, err := tokens.ExtractFromCookies(r, "access_token")
 
 	if err == nil && accessToken.Valid {
+		user := UserProjection{Email: issuer.(string)}
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(issuer.(string)))
+		json.NewEncoder(w).Encode(user)
 	} else {
 		logger.Debug("accessToken invalid", zap.Error(err))
 		refreshToken, issuer, err := tokens.ExtractFromCookies(r, "refresh_token")
@@ -80,9 +92,15 @@ func (c *Controller) Verify(w http.ResponseWriter, r *http.Request) {
 			tokens.AddToCookies(newCtx, w, accessToken, "access_token")
 			tokens.AddToCookies(newCtx, w, refreshToken, "refresh_token")
 
+			user := UserProjection{Email: issuer.(string)}
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(user)
 		} else {
+			err := ErrorProjection{Error: "access denied"}
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(err)
 		}
 	}
 }

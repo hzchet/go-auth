@@ -22,7 +22,7 @@ type HttpServer struct {
 	server *http.Server
 }
 
-func (s *HttpServer) Start() error {
+func (s *HttpServer) Start(configPath string) error {
 	logger, err := metrics.GetLogger(false, metrics.DSN, "myenv")
 	if err != nil {
 		log.Fatal(err)
@@ -44,7 +44,7 @@ func (s *HttpServer) Start() error {
 		WithUserAgent: true,
 	}))
 
-	cntrl := controller.New("config/config.yaml", ctx)
+	cntrl := controller.New(configPath, ctx)
 	router.Post(cntrl.Config.Endpoints["login"], cntrl.Login)
 	router.Post(cntrl.Config.Endpoints["verify"], cntrl.Verify)
 

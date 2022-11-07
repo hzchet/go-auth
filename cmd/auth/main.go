@@ -17,7 +17,7 @@ func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	server := server.HttpServer{}
 	go func() {
-		if err := server.Start(); !errors.Is(err, http.ErrServerClosed) {
+		if err := server.Start("config/config.yaml"); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("start server failed: %#v", err)
 		}
 	}()
