@@ -2,6 +2,7 @@ package server
 
 import (
 	"server/internal/pkg/controller"
+	"server/internal/server"
 
 	"errors"
 	"context"
@@ -18,7 +19,7 @@ import (
 
 type integraTestSuite struct {
 	suite.Suite
-	app HttpServer
+	app server.HttpServer
 	authClient *http.Client
 }
 
@@ -27,7 +28,7 @@ func TestIntegraTestSuite(t *testing.T) {
 }
 
 func (s *integraTestSuite) SetupSuite() {
-	s.app = HttpServer{}
+	s.app = server.HttpServer{}
 	s.authClient = &http.Client{Timeout: 10 * time.Second}
 	go func() {
 		if err := s.app.Start("../../config"); !errors.Is(err, http.ErrServerClosed) {
