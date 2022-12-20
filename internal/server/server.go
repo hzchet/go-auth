@@ -3,6 +3,7 @@ package server
 import (
 	"server/internal/pkg/controller"
 	"server/internal/pkg/metrics"
+	"server/internal/utils"
 
 	"context"
 	"fmt"
@@ -22,7 +23,7 @@ type HttpServer struct {
 	server *http.Server
 }
 
-func (s *HttpServer) Start(configPath string) error {
+func (s *HttpServer) Start(configPath string, storage utils.UserStorage) error {
 	logger, err := metrics.GetLogger(false, metrics.DSN, "myenv")
 	if err != nil {
 		log.Fatal(err)
@@ -44,7 +45,7 @@ func (s *HttpServer) Start(configPath string) error {
 		WithUserAgent: true,
 	}))
 
-	cntrl := controller.New(configPath, ctx)
+	cntrl := controller.New(configPath, storage, ctx)
 	router.Post(cntrl.Config.Endpoints["login"], cntrl.Login)
 	router.Post(cntrl.Config.Endpoints["verify"], cntrl.Verify)
 

@@ -3,7 +3,9 @@ package server
 import (
 	"server/internal/pkg/controller"
 	"server/internal/server"
-
+	"server/internal/database/dbuser"
+	dbUserMigrations "server/migrations/dbuser"
+	
 	"errors"
 	"context"
 	"encoding/json"
@@ -30,11 +32,23 @@ func TestIntegraTestSuite(t *testing.T) {
 func (s *integraTestSuite) SetupSuite() {
 	s.app = server.HttpServer{}
 	s.authClient = &http.Client{Timeout: 10 * time.Second}
+	dbUser, err := dbuser.NewDatabase(context.Background(), "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable", dbUserMigrations.MigrationAssets)
+	if err != nil {
+		log.Fatalf("cannot create db: %v", err)
+	}
+	defer dbUser.Close(context.Background())
+
+	err = dbUser.Ping(context.Background())
+	if err != nil {
+		log.Fatalf("cannot ping db: %v", err)
+		return
+	}
 	go func() {
-		if err := s.app.Start("../../config"); !errors.Is(err, http.ErrServerClosed) {
+		if err := s.app.Start("../../config", dbUser); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("start server failed: %#v", err)
 		}
 	}()
+
 }
 
 func (s *integraTestSuite) TearDownSuite() {

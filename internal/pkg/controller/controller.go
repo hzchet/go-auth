@@ -16,9 +16,10 @@ import (
 
 type Controller struct {
 	Config utils.ConfigScheme
+	Storage utils.UserStorage
 }
 
-func New(configPath string, ctx context.Context) *Controller {
+func New(configPath string, storage utils.UserStorage, ctx context.Context) *Controller {
 	logger := zapctx.Logger(ctx)
 	
 	_, span := metrics.Tracer.Start(ctx, "New")
@@ -30,12 +31,12 @@ func New(configPath string, ctx context.Context) *Controller {
 		logger.Error("can't read config", zap.Error(err))
 	}
 
-	controller := Controller{}
-	if err := viper.Unmarshal(&controller.Config); err != nil {
+	config := utils.ConfigScheme{}
+	if err := viper.Unmarshal(&config); err != nil {
 		logger.Error("unmarshaling of the config file failed", zap.Error(err))
 	}
 
-	return &controller
+	return &Controller{config, storage}
 }
 
 func (c *Controller) Login(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +48,11 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request) {
 
 	username, password, _ := r.BasicAuth()
 
-	if value, ok := c.Config.Users[username]; ok && value.IsEqual(password) {
+	if user, err := c.Storage.GetUserByEmail(context.Background(), username); err == nil {
+		if !utils.AreEqual(user.Password, password) {
+			w.WriteHeader(http.StatusForbidden)
+			return	
+		}
 		accessToken, refreshToken := tokens.NewPair(newCtx, username)
 
 		tokens.AddToCookies(newCtx, w, accessToken, "access_token")
